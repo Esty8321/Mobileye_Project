@@ -122,13 +122,30 @@ else:
 
 # -------------------- FastAPI --------------------
 app = FastAPI(title="Moptimizer API — Inference Only")
+from fastapi.middleware.cors import CORSMiddleware
+import os
+
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5176",
+    "http://127.0.0.1:5176",
+     "http://localhost:5177",
+     "http://127.0.0.1:5177",
+]
+
+extra = os.getenv("UI_ORIGINS")
+if extra:
+    ALLOWED_ORIGINS += [o.strip() for o in extra.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("UI_ORIGIN", "http://localhost:5173")],
+    allow_origins=ALLOWED_ORIGINS,  # use ["*"] temporarily while debugging
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 def root():
