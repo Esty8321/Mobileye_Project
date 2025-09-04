@@ -1,0 +1,22 @@
+# Python venv & caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Training artifacts & data (do NOT track)
+training/checkpoints/
+training/data/
+*.pt
+*.pth
+*.tar.gz
+*.zip
+
+# Frontend build & deps
+UI/node_modules/
+UI/dist/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+node_modules/

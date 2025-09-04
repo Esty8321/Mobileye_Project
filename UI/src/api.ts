@@ -1,0 +1,46 @@
+const BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+/** GET /classes — optional (if you want to display the model’s class names) */
+export async function getClasses(): Promise<string[]> {
+  const r = await fetch(`${BASE}/classes`);
+  if (!r.ok) throw new Error("Failed to fetch classes");
+  const j = await r.json();
+  return j.classes ?? [];
+}
+
+/** POST /predict_pipeline — main pipeline call */
+export type PipelineDetection = {
+  label: string;
+  score: number;
+  box: [number, number, number, number];       // absolute pixels
+  box_norm: [number, number, number, number];  // normalized [0..1]
+};
+
+export type PipelineResponse = {
+  classification: { label: string; score: number; index: number };
+  apple_health: null | { label: "healthy" | "sick"; score: number };
+  yolo: PipelineDetection[];
+  display_boxes_for: string;
+  meta: { cls_thresh: number; yolo_conf: number; yolo_iou: number };
+};
+
+export async function predictPipeline(file: File): Promise<PipelineResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const r = await fetch(`${BASE}/predict_pipeline`, { method: "POST", body: form });
+  if (!r.ok) throw new Error("predict_pipeline failed");
+  return r.json();
+}
+
+/** POST /annotate — keep if you still want to save new images into training/data/<label> */
+export async function annotateImage(
+  file: File,
+  label: string
+): Promise<{ ok: boolean; saved_to?: string; error?: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("label", label);
+  const r = await fetch(`${BASE}/annotate`, { method: "POST", body: form });
+  return r.json();
+}
+

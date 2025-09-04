@@ -1,0 +1,9 @@
+[INFO] Phase=phase1_160_frozen img=160 epochs=12 lr=3e-4 wd=1e-4 mixup=0.2 ls=0.1 freeze=yes
+[TRY ] phase1_160_frozen: batch_size=8
+/home/ext-z/project/training/train.py:251: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
+Trainable params: 12810000
+/home/ext-z/project/training/train.py:278: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=args.amp):
+/home/ext-z/project/training/train.py:310: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.no_grad(), torch.cuda.amp.autocast(enabled=args.amp):
