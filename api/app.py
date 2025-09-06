@@ -34,6 +34,7 @@ APPLE_CLASSES_TXT = APPLE_DIR / "classes.txt"
 # YOLO detector (optional but recommended)
 YOLO_DIR = CKPT_DIR / "yolo"
 YOLO_CKPT = YOLO_DIR / "best.pt"
+YOLO_CLASSES_TXT = YOLO_DIR / "classes.txt"#??
 
 # Annotations destination (optional feature)
 DATA_DIR = TRAINING / "data"
@@ -120,6 +121,21 @@ if _ULTRA_OK and YOLO_CKPT.exists():
 else:
     print("[INFERENCE][WARN] YOLO weights not found. 'yolo' list will be empty.")
 
+# ---- NEW: get YOLO class names (from file or from model) ----
+YOLO_NAMES: Dict[int, str] = {}
+YOLO_KNOWN: set[str] = set()
+try:
+    if YOLO_CLASSES_TXT.exists():
+        names = [ln.strip() for ln in YOLO_CLASSES_TXT.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        YOLO_NAMES = {i: n for i, n in enumerate(names)}
+    elif yolo_model is not None:
+        # fallback: read embedded names
+        YOLO_NAMES = getattr(yolo_model, "model", yolo_model).names  # dict {id: name}
+    YOLO_KNOWN = set(YOLO_NAMES.values())
+    print("[YOLO] Known classes:", YOLO_KNOWN)
+except Exception as e:
+    print("[YOLO] Could not determine YOLO class names:", e)
+
 # -------------------- FastAPI --------------------
 app = FastAPI(title="Moptimizer API — Inference Only")
 from fastapi.middleware.cors import CORSMiddleware
@@ -145,7 +161,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 @app.get("/")
 def root():
@@ -243,8 +258,13 @@ async def predict_pipeline(file: UploadFile = File(description="Upload an image 
     # 3) YOLO filtered by class from step 1
     yolo_label = CLASS_MAP.get(cls_label, cls_label)
     all_dets = _run_yolo(img, conf=YOLO_CONF, iou=YOLO_IOU)
-    filtered = [d for d in all_dets if d["label"] == yolo_label]
+    if yolo_label in YOLO_KNOWN:
+        filtered = [d for d in all_dets if d["label"] == yolo_label]
 
+    else:
+        # If the classifier label isn't a YOLO class, show all YOLO detections
+        # (so the array isn't empty and you still see what YOLO found).
+        filtered = all_dets
     return {
         "classification": {"label": cls_label, "score": cls_score, "index": idx},
         "apple_health": apple_health,       # may be null

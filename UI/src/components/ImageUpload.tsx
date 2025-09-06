@@ -43,6 +43,7 @@ export default function ImageUpload() {
     try {
       const res = await predictPipeline(file);
       setResult(res);
+      console.log("API response: ", res)
     } catch (e) {
       console.error(e);
       alert("Prediction failed. Check backend and Network tab.");
