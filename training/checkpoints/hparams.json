@@ -1,0 +1,14 @@
+{
+  "classes": [
+    "automobile",
+    "truck",
+    "ship",
+    "cat",
+    "dog"
+  ],
+  "max_total": 1000,
+  "epochs": 25,
+  "batch_size": 8,
+  "freeze_backbone": true,
+  "img_size": 160
+}

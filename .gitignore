@@ -5,7 +5,6 @@ __pycache__/
 *.pyc
 
 # Training artifacts & data (do NOT track)
-training/checkpoints/
 training/data/
 *.pt
 *.pth
