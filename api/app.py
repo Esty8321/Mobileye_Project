@@ -2,6 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict
 import io, os, uuid, time, sys, re
+import json
 
 import torch
 import torch.nn as nn
@@ -28,9 +29,8 @@ CLASSES_TXT = CKPT_DIR / "classes.txt"
 
 # Apple-health classifier (optional)
 APPLE_DIR = CKPT_DIR / "apple_health"
-APPLE_CKPT = APPLE_DIR / "best.pt"
+APPLE_CKPT = APPLE_DIR / "model_mc_best.pth"
 APPLE_CLASSES_TXT = APPLE_DIR / "classes.txt"
-
 # YOLO detector (optional but recommended)
 YOLO_DIR = CKPT_DIR / "yolo"
 YOLO_CKPT = YOLO_DIR / "best.pt"
@@ -143,6 +143,10 @@ import os
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://localhost:5175",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175",
     "http://127.0.0.1:5173",
     "http://localhost:5176",
     "http://127.0.0.1:5176",
