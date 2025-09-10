@@ -61,7 +61,7 @@ TFM_APPLE = T.Compose([T.Resize(IMG_SIZE_APPLE), T.CenterCrop(IMG_SIZE_APPLE), T
 CLS_THRESH = 0.50     # UI hint only
 YOLO_CONF = 0.25
 YOLO_IOU = 0.45
-
+PADDING = 6
 # if YOLO and general-class names differ, map them here
 CLASS_MAP: Dict[str, str] = {}
 
@@ -237,42 +237,63 @@ def _run_yolo(img: Image.Image, conf: float = YOLO_CONF, iou: float = YOLO_IOU):
             })
     return dets
 
+#keep that we don't do out oof bounds
+def _clamp(v, lo, hi):
+    return max(lo, min(hi, v))
+
 # -------------------- Single endpoint: full pipeline --------------------
+
 @app.post("/predict_pipeline")
 async def predict_pipeline(file: UploadFile = File(description="Upload an image file for prediction")):
     """
-    1) General classification → label
-    2) If label == 'apple' → apple-health classifier (if available)
-    3) YOLO → return boxes filtered to the class from step 1
+     1) General classification → label
+     2) YOLO → get boxes (filtered by the general class if רלוונטי)
+     3) For each YOLO box → crop → run apple_health classifier per-object
     """
     raw = await file.read()
     img = Image.open(io.BytesIO(raw)).convert("RGB")
+    W, H = img.size
 
     # 1) general classification
     cls_label, probs, idx, cls_score = _predict_general_pil(img)
 
-    # 2) apple health (conditional)
-    apple_health = None
-    if cls_label == "apple":
-        ah = _predict_apple_health_pil(img)
-        if ah is not None:
-            ah_label, ah_score = ah
-            apple_health = {"label": ah_label, "score": ah_score}
+   
 
     # 3) YOLO filtered by class from step 1
     yolo_label = CLASS_MAP.get(cls_label, cls_label)
     all_dets = _run_yolo(img, conf=YOLO_CONF, iou=YOLO_IOU)
+    
     if yolo_label in YOLO_KNOWN:
-        filtered = [d for d in all_dets if d["label"] == yolo_label]
+        dets = [d for d in all_dets if d["label"] == yolo_label]
 
     else:
         # If the classifier label isn't a YOLO class, show all YOLO detections
         # (so the array isn't empty and you still see what YOLO found).
-        filtered = all_dets
+        dets = all_dets
+    
+    for d in dets:
+        try:
+            x1, y1, x2, y2 = d["box"]
+            #padding + clamp
+            x1 = _clamp(int(x1) - PADDING, 0, W - 1)
+            y1 = _clamp(int(y1) - PADDING, 0, H - 1)
+            x2 = _clamp(int(x2) + PADDING, 1, W)
+            y2 = _clamp(int(y2) + PADDING, 1, H)
+
+            if d["label"] != None:
+                crop = img.crop((x1,y1,x2,y2))
+                ah = _predict_apple_health_pil(crop)  # (label, score) or None
+                if ah is not None:
+                    ah_label, ah_score = ah
+                    d["apple_health"] = {"label": ah_label, "score": ah_score}
+
+        except Exception as e:
+            print("[PIPELINE] Could not run apple_health on box:", e)
+    
+    
     return {
         "classification": {"label": cls_label, "score": cls_score, "index": idx},
-        "apple_health": apple_health,       # may be null
-        "yolo": filtered,                   # only boxes for the chosen class
+        "yolo": dets,                   # only boxes for the chosen class
         "display_boxes_for": yolo_label,
         "meta": {"cls_thresh": CLS_THRESH, "yolo_conf": YOLO_CONF, "yolo_iou": YOLO_IOU},
     }

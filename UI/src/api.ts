@@ -1,3 +1,4 @@
+import type { PipelineResponse }     from "./types/pipeline";
 const BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 /** GET /classes — optional (if you want to display the model’s class names) */
@@ -16,13 +17,13 @@ export type PipelineDetection = {
   box_norm: [number, number, number, number];  // normalized [0..1]
 };
 
-export type PipelineResponse = {
-  classification: { label: string; score: number; index: number };
-  apple_health: null | { label: "healthy" | "sick"; score: number };
-  yolo: PipelineDetection[];
-  display_boxes_for: string;
-  meta: { cls_thresh: number; yolo_conf: number; yolo_iou: number };
-};
+// export type PipelineResponse = {
+//   classification: { label: string; score: number; index: number };
+//   apple_health: null | { label: "healthy" | "sick"; score: number };
+//   yolo: PipelineDetection[];
+//   display_boxes_for: string;
+//   meta: { cls_thresh: number; yolo_conf: number; yolo_iou: number };
+// };
 
 export async function predictPipeline(file: File): Promise<PipelineResponse> {
   const form = new FormData();
